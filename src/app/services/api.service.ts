@@ -34,7 +34,7 @@ export class ApiError extends Error {
   providedIn: 'root',
 })
 export class ApiService {
-  private apiUrl = environment.apiUrl;
+  // private apiUrl = environment.apiUrl;
   private baseUrl = environment.baseUrl || '[invalid url, do not cite]';
 
   private readonly errorMessages: Record<string, string> = {
@@ -232,7 +232,7 @@ export class ApiService {
   }
 
   // FAQ endpoints
-  getFaqs(): Observable<FAQ[]> {
-    return this.http.get<FAQ[]>(`${this.apiUrl}/faqs`);
-  }
+  // getFaqs(): Observable<FAQ[]> {
+  // return this.http.get<FAQ[]>(`${this.apiUrl}/faqs`);
+  // }
 }

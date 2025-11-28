@@ -7,7 +7,7 @@ import {
   ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
@@ -20,6 +20,7 @@ import {
 import { Category, CategoryParams } from '../../interfaces/category.interface';
 import { HighlightPipe } from '../../pipes/highlight.pipe';
 import { Brand, BrandService } from '../../services/brand.service';
+import { ConfirmationStatusService } from '../../services/confirmationStatus.service';
 
 interface AttributeFilter {
   key: string;
@@ -35,7 +36,13 @@ interface Status {
 @Component({
   selector: 'app-product',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, HighlightPipe],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterModule,
+    HighlightPipe,
+    ReactiveFormsModule,
+  ],
   templateUrl: './products.component.html',
   styleUrls: ['./products.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -98,6 +105,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
   private modelSubscription: Subscription;
   private statusSubscription: Subscription;
   brands!: Brand[];
+  confirmationStatuses!: string[];
   error!: string;
 
   constructor(
@@ -106,7 +114,8 @@ export class ProductsComponent implements OnInit, OnDestroy {
     private brandService: BrandService,
     private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
-    private router: Router
+    private router: Router,
+    private statusService: ConfirmationStatusService
   ) {
     this.searchSubscription = this.searchSubject
       .pipe(debounceTime(300), distinctUntilChanged())
@@ -137,10 +146,12 @@ export class ProductsComponent implements OnInit, OnDestroy {
       this.categoryFilter = params['id'] ? params['id'] : '';
       this.brandFilter = params['brand'] || '';
       this.statusFilter = params['status'] || '';
+      this.confirmationStatusFilter = params['confirmationStatus'] || '';
       this.modelFilter = params['model'] || '';
       this.pageSize = 12;
       this.loadBrands();
       this.loadCategories();
+      this.loadConfirmationStatuses(); // Trigger loading confirmation statuses
       this.loadProducts(
         params['id']
           ? {
@@ -174,6 +185,17 @@ export class ProductsComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.error = 'Failed to load brands. Please try again later.';
         console.error('Error fetching brands:', err);
+      },
+    });
+  }
+  private loadConfirmationStatuses(): void {
+    this.statusService.getAllConfirmationStatuses().subscribe({
+      next: (statuses) => {
+        this.confirmationStatuses = statuses;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Error fetching confirmation statuses:', err);
       },
     });
   }
@@ -212,6 +234,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
       pageSize: this.pageSize,
       search: term,
       status: this.statusFilter || '',
+      confirmationStatus: this.confirmationStatusFilter || '',
       categoryId:
         this.categoryFilter && this.categoryFilter !== '0'
           ? Number(this.categoryFilter)
@@ -241,6 +264,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
       brand: brand || '',
       search: this.searchTerm || '',
       status: this.statusFilter || '',
+      confirmationStatus: this.confirmationStatusFilter || '',
       categoryId:
         this.categoryFilter && this.categoryFilter !== '0'
           ? Number(this.categoryFilter)
@@ -256,6 +280,23 @@ export class ProductsComponent implements OnInit, OnDestroy {
       pageSize: this.pageSize,
       search: this.searchTerm || '',
       status: status,
+      confirmationStatus: this.confirmationStatusFilter || '',
+      categoryId:
+        this.categoryFilter && this.categoryFilter !== '0'
+          ? Number(this.categoryFilter)
+          : undefined,
+      brand: this.brandFilter || '',
+    });
+  }
+  onConfirmationStatusFilterChange(status: string): void {
+    this.confirmationStatusFilter = status;
+    this.currentPage = 1;
+    this.loadProducts({
+      pageIndex: this.currentPage,
+      pageSize: this.pageSize,
+      search: this.searchTerm || '',
+      status: this.statusFilter || '',
+      confirmationStatus: status || '',
       categoryId:
         this.categoryFilter && this.categoryFilter !== '0'
           ? Number(this.categoryFilter)

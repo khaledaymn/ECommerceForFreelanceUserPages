@@ -28,7 +28,7 @@
               class="form-control"
               placeholder="ابحث عن المنتجات..."
               [(ngModel)]="searchTerm"
-              (ngModelChange)="onSearchChange($event.target)"
+              (ngModelChange)="onSearchChange($event)"
               aria-describedby="searchTermHelp"
             />
             <button
@@ -47,7 +47,7 @@
             id="categoryFilter"
             class="form-select"
             [(ngModel)]="categoryFilter"
-            (ngModelChange)="onCategoryFilterChange($event.target)"
+            (ngModelChange)="onCategoryFilterChange($event)"
             aria-describedby="categoryFilterHelp"
           >
             <option value="">جميع الفئات</option>
@@ -63,7 +63,7 @@
             id="brandFilter"
             class="form-select"
             [(ngModel)]="brandFilter"
-            (ngModelChange)="onBrandFilterChange($event.target)"
+            (ngModelChange)="onBrandFilterChange($event)"
             aria-describedby="brandFilterHelp"
           >
             <option value="">جميع العلامات التجارية</option>
@@ -73,7 +73,25 @@
           </select>
         </div>
 
-        <div class="col-md-2 col-sm-6 mb-3">
+        <div class="col-md-1 col-sm-5 mb-2">
+          <label for="statusFilter" class="form-label"> حالة المخزن </label>
+          <select
+            id="statusFilter"
+            class="form-select"
+            [(ngModel)]="confirmationStatusFilter"
+            (ngModelChange)="onConfirmationStatusFilterChange($event)"
+            aria-describedby="statusFilterHelp"
+          >
+            <option value="">الكل</option>
+            <option
+              *ngFor="let confirmationStatus of confirmationStatuses"
+              [value]="confirmationStatus"
+            >
+              {{ confirmationStatus }}
+            </option>
+          </select>
+        </div>
+        <div class="col-md-1 col-sm-5 mb-2">
           <label for="statusFilter" class="form-label">
             الحالة <i class="fas fa-filter filter-icon"></i>
           </label>
@@ -81,10 +99,10 @@
             id="statusFilter"
             class="form-select"
             [(ngModel)]="statusFilter"
-            (ngModelChange)="onStatusFilterChange($event.target)"
+            (ngModelChange)="onStatusFilterChange($event)"
             aria-describedby="statusFilterHelp"
           >
-            <option *ngFor="let status of statuses" [value]="status">
+            <option *ngFor="let status of statuses" [value]="status.value">
               {{ status.label }} <i class="fas {{ status.icon }}"></i>
             </option>
           </select>
