@@ -1,13 +1,20 @@
+// src/app/pages/home/home.component.ts
+
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+
+// Services
 import { ApiService } from '../../services/api.service';
-import { CartService } from '../../services/cart.service';
+// import { contentService } from '../../services/admin-data.service'; // ← جديد
+
+// Interfaces
 import { Product, ProductParams } from '../../interfaces/product.interface';
 import { Category, CategoryParams } from '../../interfaces/category.interface';
-import { FormsModule } from '@angular/forms';
-// import { Product } from '../../models/product';
-// import { Category } from '../../models/category';
+import { AdminData } from '../../interfaces/content.interface';
+import { contentService } from '../../services/content.service';
+// import { AdminData } from '../../interfaces/admin-data.interface'; // ← جديد
 
 @Component({
   selector: 'app-home',
@@ -17,49 +24,75 @@ import { FormsModule } from '@angular/forms';
   styleUrls: ['./home.component.scss'],
 })
 export class HomeComponent implements OnInit {
+  // بيانات الموقع من AdminData
+  siteData!: AdminData;
+  siteLoading = true;
+
+  // منتجات وفئات
   featuredProducts: Product[] = [];
   categories: Category[] = [];
   loading = false;
-  // Data
+
   products: Product[] = [];
-  categoryId: string | null = null; // New: To store selected category ID
+  categoryId: string | null = null;
   filteredProducts: Product[] = [];
-  errorMessage: string | null = null; // New: To display errors to the user
+  errorMessage: string | null = null;
 
   currentPage = 1;
   pageSize = 10;
   totalPages = 1;
   totalItems = 0;
 
-  // Filters
   searchQuery = '';
-
   searchTerm = '';
-  statusFilter = ''; // Default to 'both'
+  statusFilter = '';
   categoryFilter = '';
-  attributeFilters: Record<string, string[]> = {};
   sortColumn = 'name';
   sortDirection: 0 | 1 = 0;
-  activeFilter: string | null = null;
+
   constructor(
     private productService: ApiService,
     private categoryService: ApiService,
-    private route: ActivatedRoute, // Use RouterModule to access route parameters
+    private contentService: contentService, // ← جديد
+    private route: ActivatedRoute,
     private router: Router
   ) {}
+
   ngOnInit(): void {
-    const idParam = this.route.snapshot.queryParamMap.get('id');
-    const id = idParam ? Number(idParam) : 0;
+    // 1. جلب بيانات الموقع أول حاجة
+    this.loadSiteData();
+
+    // 2. جلب الفئات والمنتجات
     this.loadCategories();
-    this.loadProducts(id);
+    this.loadFeaturedProducts();
   }
 
+  // جلب بيانات الموقع (العنوان، اللوجو، الهيرو...)
+  private loadSiteData(): void {
+    this.siteLoading = true;
+    this.contentService.getAdminData().subscribe({
+      next: (data) => {
+        this.siteData = data;
+        this.siteLoading = false;
+      },
+      error: (err) => {
+        console.error('Failed to load site settings:', err);
+        this.siteData = {
+          id: 1,
+          title: 'متجر العوفي',
+          description: 'قطع غيار ومكونات أصلية بأفضل الأسعار',
+          logo: 'assets/images/default-logo.png', // fallback
+          heroImage: 'assets/images/default-hero.jpg', // fallback
+        };
+        this.siteLoading = false;
+      },
+    });
+  }
+
+  // جلب الفئات
   loadCategories(): void {
     this.loading = true;
-    const params: CategoryParams = {
-      pageIndex: 1,
-      pageSize: 100,
-    };
+    const params: CategoryParams = { pageIndex: 1, pageSize: 100 };
 
     this.categoryService.getAllCategories(params).subscribe({
       next: (response) => {
@@ -70,61 +103,40 @@ export class HomeComponent implements OnInit {
         this.loading = false;
       },
       error: (error) => {
-        console.error('errorMessageloading categories:', error);
+        console.error('Error loading categories:', error);
         this.loading = false;
       },
     });
   }
 
-  loadProducts(cat: number): void {
+  // جلب المنتجات المميزة (آخر 8 منتجات مثلاً)
+  loadFeaturedProducts(): void {
     this.loading = true;
     const params: ProductParams = {
-      pageIndex: this.currentPage,
-      pageSize: this.pageSize,
-      search: this.searchTerm,
-      status: this.statusFilter,
-      categoryId:
-        cat != 0
-          ? cat
-          : this.categoryFilter
-          ? Number(this.categoryFilter)
-          : undefined,
-      sortProp: this.sortColumn as any,
-      sortDirection: this.sortDirection as any,
+      pageIndex: 1,
+      pageSize: 8,
+      sortDirection: 1, // الأحدث أولًا
     };
 
     this.productService.getAllProducts(params).subscribe({
       next: (response) => {
-        this.products = response.data.map((product: Product) => ({
-          ...product,
-          status: product.status ?? '', // Default to 'both' if not provided
-          brand: product.brand ?? '',
-          model: product.model ?? '',
-          createdAt: product.createdAt ?? '',
-          productMedia: product.productMedia ?? [],
+        this.featuredProducts = response.data.map((p: Product) => ({
+          ...p,
+          status: p.status ?? '',
+          brand: p.brand ?? '',
+          model: p.model ?? '',
+          createdAt: p.createdAt ?? '',
+          productMedia: p.productMedia ?? [],
         }));
-        // this.filteredProducts = this.applyClientSideFilters(this.products);
-        this.totalItems = response.totalCount;
-        this.totalPages = Math.ceil(response.totalCount / this.pageSize);
-        // this.extractAvailableAttributes();
         this.loading = false;
-        console.log('Products loaded successfully', this.products);
-        // Clear any previous errorMessagemessages
       },
-      error: (error) => {
-        console.error('errorMessageloading products:', error);
+      error: (err) => {
+        console.error('Error loading featured products:', err);
         this.loading = false;
       },
     });
   }
 
-  // addToCart(product: Product): void {
-  //   this.cartService.addToCart(product);
-  // }
-
-  getStarArray(rating: number): number[] {
-    return Array(Math.floor(rating)).fill(0);
-  }
   onSearch() {
     if (this.searchQuery.trim()) {
       this.router.navigate(['/products'], {
@@ -132,5 +144,9 @@ export class HomeComponent implements OnInit {
       });
       this.searchQuery = '';
     }
+  }
+
+  getStarArray(rating: number): number[] {
+    return Array(Math.floor(rating || 0)).fill(0);
   }
 }

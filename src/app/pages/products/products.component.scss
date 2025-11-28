@@ -38,10 +38,10 @@
 
     .btn {
       flex: 1;
-
-      &:last-child {
-        margin-right: 0;
+      span{
+        margin: 0.5rem;
       }
+
     }
   }
   .btn {
@@ -277,4 +277,8 @@ mark {
   .filter-item {
     min-width: 30% !important;
   }
+}
+.badge.bg-red-700 {
+  background-color: #ef4444d3;
+  color: #fff;
 }

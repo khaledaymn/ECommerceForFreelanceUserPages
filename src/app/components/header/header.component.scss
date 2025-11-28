@@ -424,8 +424,10 @@
 
   .header-actions {
     gap: 0.25rem;
-
-    .nav-icon {
+.btn{
+}
+.nav-icon {
+      display: none;
       font-size: 1.2rem;
       padding: 0.6rem;
     }
@@ -434,6 +436,7 @@
   .search-container {
     display: none !important;
   }
+
 }
 
 @media (max-width: 575.98px) {
@@ -448,6 +451,18 @@
       flex-direction: column;
       gap: 0.5rem;
       align-items: flex-end;
+    }
+  }
+  .search-wrapper{
+    .search-form{
+      .input-group{
+        .search-input{
+          display: none;
+        }
+        .search-btn{
+          display: none;
+        }
+      }
     }
   }
 }

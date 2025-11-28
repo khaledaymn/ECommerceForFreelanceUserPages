@@ -18,7 +18,7 @@ export const routes: Routes = [
     path: 'products',
     loadComponent: () =>
       import('./pages/products/products.component').then(
-        (m) => m.ProductManagementComponent
+        (m) => m.ProductsComponent
       ),
     title: 'العوفي - المنتجات',
     data: {

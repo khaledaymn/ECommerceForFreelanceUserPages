@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../services/toast.service';
+import { AdminData } from '../../interfaces/content.interface';
+import { contentService } from '../../services/content.service';
 
 @Component({
   selector: 'app-footer',
@@ -81,8 +83,35 @@ export class FooterComponent implements OnInit {
     workingHours: 'السبت - الخميس: 8:00 ص - 5:00 م',
   };
 
+  siteData!: AdminData;
+  siteLoading = true;
+  constructor(
+    private contentService: contentService // ← جديد
+  ) {}
+
   ngOnInit(): void {
-    // Any initialization logic
+    this.loadSiteData();
+  }
+  private loadSiteData(): void {
+    this.siteLoading = true;
+    this.contentService.getAdminData().subscribe({
+      next: (data) => {
+        this.siteData = data;
+        this.siteLoading = false;
+        console.log(data);
+      },
+      error: (err) => {
+        console.error('Failed to load site settings:', err);
+        this.siteData = {
+          id: 1,
+          title: 'متجر العوفي',
+          description: 'قطع غيار ومكونات أصلية بأفضل الأسعار',
+          logo: 'assets/images/default-logo.png', // fallback
+          heroImage: 'assets/images/default-hero.jpg', // fallback
+        };
+        this.siteLoading = false;
+      },
+    });
   }
 
   subscribeNewsletter(): void {

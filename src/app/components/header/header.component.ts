@@ -4,6 +4,8 @@ import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 import { Category, CategoryParams } from '../../interfaces/category.interface';
+import { contentService } from '../../services/content.service';
+import { AdminData } from '../../interfaces/content.interface';
 
 @Component({
   selector: 'app-header',
@@ -58,8 +60,35 @@ export class HeaderComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadCategories();
+    this.loadSiteData();
   }
+  siteData!: AdminData;
+  siteLoading = true;
+  constructor(
+    private contentService: contentService // ← جديد
+  ) {}
 
+  private loadSiteData(): void {
+    this.siteLoading = true;
+    this.contentService.getAdminData().subscribe({
+      next: (data) => {
+        this.siteData = data;
+        this.siteLoading = false;
+        console.log(data);
+      },
+      error: (err) => {
+        console.error('Failed to load site settings:', err);
+        this.siteData = {
+          id: 1,
+          title: 'متجر العوفي',
+          description: 'قطع غيار ومكونات أصلية بأفضل الأسعار',
+          logo: 'assets/images/default-logo.png', // fallback
+          heroImage: 'assets/images/default-hero.jpg', // fallback
+        };
+        this.siteLoading = false;
+      },
+    });
+  }
   loadCategories(): void {
     const params: CategoryParams = {
       pageIndex: 1,
