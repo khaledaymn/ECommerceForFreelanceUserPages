@@ -20,6 +20,7 @@ export interface Product {
   description: string;
   additionalAttributes?: string | null; // JSON string
   status: string; // Corrected type from string to statusEnum
+  confirmationStatus: string;
   brand: string; // Corrected typo from "brabd" to "brand"
   model: string; // Corrected typo from "modle" to "model"
   quantity: number; // Corrected typo from "qunatity" to "quantity"
@@ -51,7 +52,7 @@ export enum SortProp {
 export enum statusEnum {
   lease = 'إيجار',
   purchase = 'شراء',
-  both = 'إيجار وشراء',
+  both = 'بيع',
 }
 export interface ProductParams {
   search?: string | null;
@@ -59,11 +60,12 @@ export interface ProductParams {
   attributesFilter?: Record<string, string> | null;
   categoryId?: number | null;
   status?: string | null;
+  confirmationStatus?: string | null;
   brand?: string | null;
   model?: string | null;
   quantity?: number | null;
   sortProp?: SortProp | null;
   sortDirection?: SortDirection | null;
   pageIndex: number;
-  pageSize: number ;
+  pageSize: number;
 }

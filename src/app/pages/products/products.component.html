@@ -73,7 +73,25 @@
           </select>
         </div>
 
-        <div class="col-md-2 col-sm-6 mb-3">
+        <div class="col-md-1 col-sm-5 mb-2">
+          <label for="statusFilter" class="form-label"> حالة المخزن </label>
+          <select
+            id="statusFilter"
+            class="form-select"
+            [(ngModel)]="confirmationStatusFilter"
+            (ngModelChange)="onConfirmationStatusFilterChange($event)"
+            aria-describedby="statusFilterHelp"
+          >
+            <option value="">الكل</option>
+            <option
+              *ngFor="let confirmationStatus of confirmationStatuses"
+              [value]="confirmationStatus"
+            >
+              {{ confirmationStatus }}
+            </option>
+          </select>
+        </div>
+        <div class="col-md-1 col-sm-5 mb-2">
           <label for="statusFilter" class="form-label">
             الحالة <i class="fas fa-filter filter-icon"></i>
           </label>
@@ -125,7 +143,10 @@
           <h5 class="card-title placeholder col-6"></h5>
           <p class="card-text placeholder col-12"></p>
           <div class="mt-auto">
-            <button class="btn btn-warning placeholder w-100" aria-label="تحميل المنتج"></button>
+            <button
+              class="btn btn-warning placeholder w-100"
+              aria-label="تحميل المنتج"
+            ></button>
           </div>
         </div>
       </div>
@@ -138,7 +159,18 @@
       class="col-lg-3 col-md-4 col-sm-6 mb-4"
       *ngFor="let product of paginatedProducts; trackBy: trackByProductId"
     >
-      <div class="card h-100 product-card">
+      <div class="card h-100 product-card position-relative">
+        <!-- added position-relative -->
+        <!-- Badge / Patch on top-right of the image -->
+        <div class="position-absolute top-0 end-0 p-2 z-3">
+          <!-- Example badges – you can customize the condition/text/color as you like -->
+          <span
+            class="badge bg-red-700 fs-7"
+            *ngIf="product.confirmationStatus"
+            >{{ product.confirmationStatus }}</span
+          >
+        </div>
+
         <img
           [src]="product.mainImageURL"
           alt="{{ product.name }}"
@@ -146,6 +178,8 @@
           loading="lazy"
           (error)="onImageError($event)"
         />
+
+        <!-- rest of your card stays exactly the same -->
         <div class="card-body d-flex flex-column">
           <h5
             class="card-title"
@@ -173,20 +207,30 @@
                 <button
                   class="btn btn-warning"
                   type="button"
-                  *ngIf="product.status !== 'إيجار'"
+                  *ngIf="product.status.includes('شراء')"
                   (click)="confirm(product.id, 'شراء')"
                 >
                   <i class="fas fa-shopping-cart"></i>
                   <span>شراء الآن</span>
                 </button>
+
                 <button
                   class="btn btn-success"
                   type="button"
-                  *ngIf="product.status !== 'شراء'"
+                  *ngIf="product.status.includes('إيجار')"
                   (click)="confirm(product.id, 'إيجار')"
                 >
                   <i class="fas fa-cart-plus"></i>
                   <span>إيجار الآن</span>
+                </button>
+                <button
+                  class="btn btn-danger"
+                  type="button"
+                  *ngIf="product.status.includes('بيع')"
+                  (click)="confirm(product.id, 'بيع')"
+                >
+                  <i class="fas fa-tag"></i>
+                  <span>بيع الآن </span>
                 </button>
                 <a
                   [routerLink]="['/products', product.id]"
@@ -199,68 +243,72 @@
           </div>
         </div>
       </div>
+
+      <!-- No Products Found -->
+      <div
+        *ngIf="!loading && filteredProducts.length === 0"
+        class="text-center py-5"
+      >
+        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+        <h3>لم يتم العثور على منتجات</h3>
+        <p class="text-muted">جرب تغيير معايير البحث أو الفلترة</p>
+      </div>
+
+      <!-- Pagination -->
+      <nav *ngIf="!loading && totalPages > 1" aria-label="Products pagination">
+        <div class="d-flex justify-content-center align-items-center">
+          <ul class="pagination justify-content-center mb-0">
+            <li class="page-item" [class.disabled]="currentPage === 1">
+              <button
+                class="page-link"
+                (click)="changePage(1)"
+                aria-label="الأولى"
+              >
+                <i class="fas fa-angle-double-right"></i>
+              </button>
+            </li>
+            <li class="page-item" [class.disabled]="currentPage === 1">
+              <button
+                class="page-link"
+                (click)="changePage(currentPage - 1)"
+                aria-label="السابق"
+              >
+                السابق
+              </button>
+            </li>
+            <li
+              class="page-item"
+              *ngFor="let page of getPaginationRange()"
+              [class.active]="currentPage === page"
+            >
+              <button class="page-link" (click)="changePage(page)">
+                {{ page }}
+              </button>
+            </li>
+            <li *ngIf="showEllipsisEnd()" class="page-item disabled">
+              <span class="page-link">...</span>
+            </li>
+            <li class="page-item" [class.disabled]="currentPage === totalPages">
+              <button
+                class="page-link"
+                (click)="changePage(currentPage + 1)"
+                aria-label="التالي"
+              >
+                التالي
+              </button>
+            </li>
+            <li class="page-item" [class.disabled]="currentPage === totalPages">
+              <button
+                class="page-link"
+                (click)="changePage(totalPages)"
+                aria-label="الأخيرة"
+              >
+                <i class="fas fa-angle-double-left"></i>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </nav>
     </div>
   </div>
-
-  <!-- No Products Found -->
-  <div
-    *ngIf="!loading && filteredProducts.length === 0"
-    class="text-center py-5"
-  >
-    <i class="fas fa-search fa-3x text-muted mb-3"></i>
-    <h3>لم يتم العثور على منتجات</h3>
-    <p class="text-muted">جرب تغيير معايير البحث أو الفلترة</p>
-  </div>
-
-  <!-- Pagination -->
-  <nav *ngIf="!loading && totalPages > 1" aria-label="Products pagination">
-    <div class="d-flex justify-content-center align-items-center">
-      <ul class="pagination justify-content-center mb-0">
-        <li class="page-item" [class.disabled]="currentPage === 1">
-          <button class="page-link" (click)="changePage(1)" aria-label="الأولى">
-            <i class="fas fa-angle-double-right"></i>
-          </button>
-        </li>
-        <li class="page-item" [class.disabled]="currentPage === 1">
-          <button
-            class="page-link"
-            (click)="changePage(currentPage - 1)"
-            aria-label="السابق"
-          >
-            السابق
-          </button>
-        </li>
-        <li
-          class="page-item"
-          *ngFor="let page of getPaginationRange()"
-          [class.active]="currentPage === page"
-        >
-          <button class="page-link" (click)="changePage(page)">
-            {{ page }}
-          </button>
-        </li>
-        <li *ngIf="showEllipsisEnd()" class="page-item disabled">
-          <span class="page-link">...</span>
-        </li>
-        <li class="page-item" [class.disabled]="currentPage === totalPages">
-          <button
-            class="page-link"
-            (click)="changePage(currentPage + 1)"
-            aria-label="التالي"
-          >
-            التالي
-          </button>
-        </li>
-        <li class="page-item" [class.disabled]="currentPage === totalPages">
-          <button
-            class="page-link"
-            (click)="changePage(totalPages)"
-            aria-label="الأخيرة"
-          >
-            <i class="fas fa-angle-double-left"></i>
-          </button>
-        </li>
-      </ul>
-    </div>
-  </nav>
 </div>

@@ -1,6 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { AdminData } from '../../interfaces/content.interface';
+import { contentService } from '../../services/content.service';
 
 @Component({
   selector: 'app-about',
@@ -9,7 +11,37 @@ import { RouterModule } from '@angular/router';
   templateUrl: './about.component.html',
   styleUrls: ['./about.component.scss'],
 })
-export class AboutComponent {
+export class AboutComponent implements OnInit {
+  siteData!: AdminData;
+  siteLoading = true;
+  constructor(
+    private contentService: contentService // ← جديد
+  ) {}
+
+  ngOnInit(): void {
+    this.loadSiteData();
+  }
+  private loadSiteData(): void {
+    this.siteLoading = true;
+    this.contentService.getAdminData().subscribe({
+      next: (data) => {
+        this.siteData = data;
+        this.siteLoading = false;
+        console.log(data);
+      },
+      error: (err) => {
+        console.error('Failed to load site settings:', err);
+        this.siteData = {
+          id: 1,
+          title: 'متجر العوفي',
+          description: 'قطع غيار ومكونات أصلية بأفضل الأسعار',
+          logo: 'assets/images/default-logo.png', // fallback
+          heroImage: 'assets/images/default-hero.jpg', // fallback
+        };
+        this.siteLoading = false;
+      },
+    });
+  }
   stats = [
     { number: '20+', label: 'سنة من الخبرة' },
     { number: '1000+', label: 'عميل راضي' },

@@ -7,7 +7,7 @@ import {
   ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
@@ -20,6 +20,7 @@ import {
 import { Category, CategoryParams } from '../../interfaces/category.interface';
 import { HighlightPipe } from '../../pipes/highlight.pipe';
 import { Brand, BrandService } from '../../services/brand.service';
+import { ConfirmationStatusService } from '../../services/confirmationStatus.service';
 
 interface AttributeFilter {
   key: string;
@@ -35,12 +36,18 @@ interface Status {
 @Component({
   selector: 'app-product',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, HighlightPipe],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterModule,
+    HighlightPipe,
+    ReactiveFormsModule,
+  ],
   templateUrl: './products.component.html',
   styleUrls: ['./products.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ProductManagementComponent implements OnInit, OnDestroy {
+export class ProductsComponent implements OnInit, OnDestroy {
   // Data
   products: Product[] = [];
   categories: Category[] = [];
@@ -60,6 +67,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
   searchTerm = '';
   brandFilter = '';
   statusFilter = '';
+  confirmationStatusFilter = '';
   modelFilter = '';
   quantityFilter: number | null = null;
   attributeFilters: Record<string, string[]> = {};
@@ -76,8 +84,10 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
   availableAttributes: AttributeFilter[] = [];
   statuses: Status[] = [
     { value: '', label: 'الكل', icon: 'fa-globe' },
-    { value: statusEnum.purchase, label: 'شراء', icon: 'fa-shopping-cart' },
+    { value: statusEnum.purchase, label: 'شراء', icon: 'fa-exchange-alt' },
+    // { value: statusEnum.purchase, label: 'شراء', icon: 'fa-shopping-cart' },
     { value: statusEnum.lease, label: 'إيجار', icon: 'fa-key' },
+    { value: statusEnum.both, label: 'بيع', icon: 'fa-exchange-alt' },
   ];
 
   // Memoization caches
@@ -95,6 +105,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
   private modelSubscription: Subscription;
   private statusSubscription: Subscription;
   brands!: Brand[];
+  confirmationStatuses!: string[];
   error!: string;
 
   constructor(
@@ -103,7 +114,8 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
     private brandService: BrandService,
     private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
-    private router: Router
+    private router: Router,
+    private statusService: ConfirmationStatusService
   ) {
     this.searchSubscription = this.searchSubject
       .pipe(debounceTime(300), distinctUntilChanged())
@@ -134,10 +146,12 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
       this.categoryFilter = params['id'] ? params['id'] : '';
       this.brandFilter = params['brand'] || '';
       this.statusFilter = params['status'] || '';
+      this.confirmationStatusFilter = params['confirmationStatus'] || '';
       this.modelFilter = params['model'] || '';
       this.pageSize = 12;
       this.loadBrands();
       this.loadCategories();
+      this.loadConfirmationStatuses(); // Trigger loading confirmation statuses
       this.loadProducts(
         params['id']
           ? {
@@ -174,6 +188,17 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
       },
     });
   }
+  private loadConfirmationStatuses(): void {
+    this.statusService.getAllConfirmationStatuses().subscribe({
+      next: (statuses) => {
+        this.confirmationStatuses = statuses;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Error fetching confirmation statuses:', err);
+      },
+    });
+  }
   // Filter methods (aligned with original HTML)
   onCategoryFilterChange(category: string): void {
     this.categoryFilter = category;
@@ -185,6 +210,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
         categoryId: Number(category),
         search: this.searchTerm || '',
         status: this.statusFilter || '',
+        confirmationStatus: this.confirmationStatusFilter || '',
         brand: this.brandFilter || '',
       });
     } else {
@@ -196,6 +222,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
   }
 
   onSearchChange(term: string): void {
+    console.log(term);
     this.searchSubject.next(term);
     this.searchTerm = term;
     // this.categoryFilter = '';
@@ -207,6 +234,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
       pageSize: this.pageSize,
       search: term,
       status: this.statusFilter || '',
+      confirmationStatus: this.confirmationStatusFilter || '',
       categoryId:
         this.categoryFilter && this.categoryFilter !== '0'
           ? Number(this.categoryFilter)
@@ -236,6 +264,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
       brand: brand || '',
       search: this.searchTerm || '',
       status: this.statusFilter || '',
+      confirmationStatus: this.confirmationStatusFilter || '',
       categoryId:
         this.categoryFilter && this.categoryFilter !== '0'
           ? Number(this.categoryFilter)
@@ -251,6 +280,23 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
       pageSize: this.pageSize,
       search: this.searchTerm || '',
       status: status,
+      confirmationStatus: this.confirmationStatusFilter || '',
+      categoryId:
+        this.categoryFilter && this.categoryFilter !== '0'
+          ? Number(this.categoryFilter)
+          : undefined,
+      brand: this.brandFilter || '',
+    });
+  }
+  onConfirmationStatusFilterChange(status: string): void {
+    this.confirmationStatusFilter = status;
+    this.currentPage = 1;
+    this.loadProducts({
+      pageIndex: this.currentPage,
+      pageSize: this.pageSize,
+      search: this.searchTerm || '',
+      status: this.statusFilter || '',
+      confirmationStatus: status || '',
       categoryId:
         this.categoryFilter && this.categoryFilter !== '0'
           ? Number(this.categoryFilter)
@@ -307,12 +353,12 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
 
   loadProducts(productParams?: ProductParams): void {
     this.loading = true;
-    this.errorMessage = null;
     const params: ProductParams = {
       pageIndex: this.currentPage,
       pageSize: this.pageSize,
       search: this.searchTerm || '',
       status: this.statusFilter || '',
+      confirmationStatus: this.confirmationStatusFilter || '',
       categoryId:
         productParams && productParams.categoryId !== 0
           ? productParams.categoryId
@@ -328,6 +374,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
         this.products = response.data.map((product: Product) => ({
           ...product,
           status: product.status ?? '',
+          confirmationStatus: product.confirmationStatus ?? '',
           brand: product.brand ?? '',
           model: product.model ?? '',
           quantity: product.quantity ?? 0,
@@ -466,6 +513,7 @@ export class ProductManagementComponent implements OnInit, OnDestroy {
             categoryId: this.categoryId,
             search: this.searchTerm || '',
             status: this.statusFilter || '',
+            confirmationStatus: this.confirmationStatusFilter || '',
             brand: this.brandFilter || '',
           }
         : undefined
