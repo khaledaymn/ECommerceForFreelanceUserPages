@@ -71,6 +71,11 @@ export class ApiService {
     if (params.categoryId)
       httpParams = httpParams.set('categoryId', params.categoryId.toString());
     if (params.status) httpParams = httpParams.set('status', params.status);
+    if (params.confirmationStatus)
+      httpParams = httpParams.set(
+        'confirmationStatus',
+        params.confirmationStatus
+      );
     if (params.brand) httpParams = httpParams.set('brand', params.brand);
     if (params.model) httpParams = httpParams.set('model', params.model);
     if (params.quantity)
