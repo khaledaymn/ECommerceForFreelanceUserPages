@@ -92,6 +92,11 @@
       &:hover::after {
         width: 60px;
       }
+      @media (max-width:1024px) {
+        &::after{
+          display: none;
+        }
+      }
     }
   }
 }

@@ -27,17 +27,21 @@
                   class="form-control"
                   placeholder="ابحث في الأسئلة الشائعة..."
                   [(ngModel)]="searchTerm"
-                  (input)="filterFaqs()">
+                  (input)="filterFaqs()"
+                />
               </div>
             </div>
             <div class="col-md-4">
-              <label for="faqCategorySelect" class="form-label visually-hidden">اختر الفئة</label>
+              <label for="faqCategorySelect" class="form-label visually-hidden"
+                >اختر الفئة</label
+              >
               <select
                 id="faqCategorySelect"
                 class="form-select"
                 [(ngModel)]="selectedCategory"
                 (change)="filterFaqs()"
-                aria-label="اختر الفئة">
+                aria-label="اختر الفئة"
+              >
                 <option value="">جميع الفئات</option>
                 <option *ngFor="let category of categories" [value]="category">
                   {{ getCategoryName(category) }}
@@ -60,22 +64,29 @@
       </div>
 
       <div class="accordion" id="faqAccordion">
-        <div class="accordion-item mb-3" *ngFor="let faq of filteredFaqs; let i = index">
+        <div
+          class="accordion-item mb-3"
+          *ngFor="let faq of filteredFaqs; let i = index"
+        >
           <h2 class="accordion-header">
             <button
               class="accordion-button collapsed"
               [class.collapsed]="expandedFaq !== faq.id"
               type="button"
-              (click)="toggleFaq(faq.id)">
+              (click)="toggleFaq(faq.id)"
+            >
               <div class="d-flex align-items-center w-100">
-                <span class="badge bg-warning text-dark me-3">{{ getCategoryName(faq.category) }}</span>
+                <span class="badge bg-warning text-dark me-3">{{
+                  getCategoryName(faq.category)
+                }}</span>
                 <span class="flex-grow-1">{{ faq.questionAr }}</span>
               </div>
             </button>
           </h2>
           <div
             class="accordion-collapse collapse"
-            [class.show]="expandedFaq === faq.id">
+            [class.show]="expandedFaq === faq.id"
+          >
             <div class="accordion-body">
               <p class="mb-0">{{ faq.answerAr }}</p>
             </div>
